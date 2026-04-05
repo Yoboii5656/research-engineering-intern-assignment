@@ -15,35 +15,76 @@ from sklearn.cluster import KMeans
 import umap.umap_ as umap_reducer
 import requests
 
+try:
+    from groq import Groq as GroqClient
+    _GROQ_AVAILABLE = True
+except ImportError:
+    _GROQ_AVAILABLE = False
+
 nltk.download('vader_lexicon', quiet=True)
 sia = SentimentIntensityAnalyzer()
 
-# ── Ollama AI Summary Helper ──────────────────────────────────────────────────
+# ── AI Summary Helper (Groq cloud + Ollama local fallback) ────────────────────
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
-def get_chart_summary(prompt: str, model: str = "llama3.2") -> str:
-    """Call local Ollama API and return a chart summary string."""
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "stream": False,
-        "options": {"temperature": 0.3, "num_predict": 200}
-    }
+# Groq model map (displayed name → API model id)
+GROQ_MODELS = {
+    "llama-3.2-3b (fastest ⚡)":   "llama-3.2-3b-preview",
+    "llama-3.3-70b (best quality)": "llama-3.3-70b-versatile",
+    "gemma2-9b":                     "gemma2-9b-it",
+    "mixtral-8x7b":                  "mixtral-8x7b-32768",
+}
+
+def _get_groq_key() -> str | None:
+    """Return Groq API key from Streamlit secrets, or None."""
     try:
+        return st.secrets["GROQ_API_KEY"]
+    except Exception:
+        return None
+
+def get_chart_summary(prompt: str, model_display: str) -> str:
+    """
+    Generate an AI chart summary.
+    Priority: Groq API (cloud) → Ollama (local) → offline message.
+    """
+    groq_key = _get_groq_key()
+
+    # ── Cloud path: Groq ──────────────────────────────────────────────────────
+    if groq_key and _GROQ_AVAILABLE:
+        model_id = GROQ_MODELS.get(model_display, "llama-3.2-3b-preview")
+        try:
+            client = GroqClient(api_key=groq_key)
+            chat = client.chat.completions.create(
+                model=model_id,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=250,
+            )
+            return chat.choices[0].message.content.strip()
+        except Exception as e:
+            return f"⚠️ Groq API error: {e}"
+
+    # ── Local fallback: Ollama ────────────────────────────────────────────────
+    try:
+        payload = {
+            "model": "llama3.2",
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0.3, "num_predict": 200},
+        }
         resp = requests.post(OLLAMA_URL, json=payload, timeout=60)
         resp.raise_for_status()
         return resp.json().get("response", "No response from model.").strip()
     except requests.exceptions.ConnectionError:
-        return "__OLLAMA_OFFLINE__"
-    except requests.exceptions.Timeout:
-        return "⚠️ The AI took too long to respond. Try a faster model or a shorter prompt."
+        return "__AI_OFFLINE__"
     except Exception as e:
-        return f"⚠️ Error contacting Ollama: {e}"
+        return f"⚠️ Error: {e}"
+
 
 def render_ai_summary_button(tab, chart_title: str, data_context: str, key: str, model: str):
-    """Render an AI Summary button under a chart and display the response."""
-    col1, col2 = tab.columns([1, 5])
+    """Render an ✨ AI Summary button beneath a chart."""
+    col1, _ = tab.columns([1, 5])
     with col1:
         clicked = st.button("✨ AI Summary", key=key, help="Generate an AI insight for this chart")
     if clicked:
@@ -54,12 +95,12 @@ def render_ai_summary_button(tab, chart_title: str, data_context: str, key: str,
             "Be specific about numbers and trends. Do not repeat the chart title."
         )
         with tab:
-            with st.spinner(f"🤖 Generating AI insight using **{model}**..."):
+            with st.spinner("🤖 Generating AI insight…"):
                 summary = get_chart_summary(prompt, model)
-        if summary == "__OLLAMA_OFFLINE__":
+        if summary == "__AI_OFFLINE__":
             tab.warning(
-                "🔌 **Ollama is not running locally.** Start it with `ollama serve` in your terminal, "
-                "then try again. (AI summaries are not available on the cloud-deployed version.)"
+                "🔌 **AI is unavailable.** On the cloud deployment, ensure the `GROQ_API_KEY` secret "
+                "is set in Streamlit settings. Locally, start Ollama with `ollama serve`."
             )
         else:
             tab.info(f"🤖 **AI Insight:** {summary}")
@@ -114,11 +155,11 @@ search_query = st.sidebar.text_input("Search posts:", "")
 
 st.sidebar.divider()
 st.sidebar.header("🤖 AI Settings")
-ollama_model = st.sidebar.selectbox(
-    "Ollama Model:",
-    options=["llama3.2", "llama3.2:1b", "phi3", "mistral", "gemma2:2b", "qwen2.5:0.5b"],
+ai_model = st.sidebar.selectbox(
+    "AI Model:",
+    options=list(GROQ_MODELS.keys()),
     index=0,
-    help="Select the Ollama model to use for chart summaries. Smaller models are faster."
+    help="Select the AI model for chart summaries. Uses Groq API in the cloud, or Ollama locally if Groq fails."
 )
 
 # ── Apply Filters ─────────────────────────────────────────────────────────────
@@ -156,7 +197,7 @@ render_ai_summary_button(
     chart_title="Misinformation Trends by Subreddit",
     data_context=misinfo_counts.to_string(index=False),
     key="ai_misinfo_trends",
-    model=ollama_model
+    model=ai_model
 )
 
 tabs[0].divider()
@@ -173,7 +214,7 @@ render_ai_summary_button(
     chart_title="Engagement Metrics Across Misinformation Labels",
     data_context=engagement_metrics.to_string(index=False),
     key="ai_engagement_metrics",
-    model=ollama_model
+    model=ai_model
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -189,7 +230,7 @@ render_ai_summary_button(
     chart_title="Subreddit Activity: Comments & Upvotes",
     data_context=engagement.to_string(index=False),
     key="ai_subreddit_activity",
-    model=ollama_model
+    model=ai_model
 )
 
 tabs[1].divider()
@@ -202,7 +243,7 @@ render_ai_summary_button(
     chart_title="Unique Authors per Subreddit",
     data_context=author_counts.to_string(index=False),
     key="ai_unique_authors",
-    model=ollama_model
+    model=ai_model
 )
 
 tabs[1].divider()
@@ -216,7 +257,7 @@ render_ai_summary_button(
     chart_title="Most Active Users",
     data_context=top_users.head(10).to_string(index=False),
     key="ai_top_users",
-    model=ollama_model
+    model=ai_model
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -245,7 +286,7 @@ render_ai_summary_button(
     chart_title="Distribution of Posts by Topic",
     data_context=topic_counts.to_string(index=False),
     key="ai_topic_dist",
-    model=ollama_model
+    model=ai_model
 )
 
 tabs[2].divider()
@@ -265,7 +306,7 @@ render_ai_summary_button(
     chart_title="Top Named Entities Word Cloud",
     data_context=f"Top 20 named entities (entity: frequency):\n{top_entities_str}",
     key="ai_wordcloud",
-    model=ollama_model
+    model=ai_model
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -285,7 +326,7 @@ render_ai_summary_button(
     chart_title="Sentiment Distribution by Subreddit",
     data_context=sentiment_counts.to_string(index=False),
     key="ai_sentiment_dist",
-    model=ollama_model
+    model=ai_model
 )
 
 tabs[3].divider()
@@ -304,7 +345,7 @@ render_ai_summary_button(
     chart_title="Sentiment Trends Over Time (Aggregated Weekly)",
     data_context=sentiment_trend.tail(30).to_string(index=False),
     key="ai_sentiment_trend",
-    model=ollama_model
+    model=ai_model
 )
 
 # ── Sidebar Summary ───────────────────────────────────────────────────────────
@@ -434,5 +475,5 @@ render_ai_summary_button(
     chart_title=f"UMAP Embedding Space — {n_clusters} KMeans Clusters",
     data_context=umap_context,
     key="ai_umap_clusters",
-    model=ollama_model
+    model=ai_model
 )

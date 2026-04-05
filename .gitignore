@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Secrets — never commit API keys
+.streamlit/secrets.toml
+
+
 # C extensions
 *.so
 
