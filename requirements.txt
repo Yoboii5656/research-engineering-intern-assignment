@@ -8,3 +8,4 @@ numpy
 sentence-transformers
 scikit-learn
 umap-learn
+requests
