@@ -1,7 +1,7 @@
 # 🔍 Reddit Misinformation & Narrative Intelligence Dashboard
 
 ## 🔗 Live Hosted Link & Demo
-**Live App:** [http://<YOUR_EC2_PUBLIC_IP>:8501](http://127.0.0.1:8501)  
+**Live App:** [http://3.111.168.229:8501/](http://3.111.168.229:8501/)  
 *(Note: Replace the placeholder above with your actual AWS EC2 Public IPv4 address if currently deployed.)*
 
 ---
@@ -60,15 +60,13 @@ The core innovation of this project lies in its integration of advanced Natural 
 
 ## 📸 Screenshots
 
-*(Replace these placeholders with the actual relative paths or links to your project's screenshots)*
-
-| Dashboard Overview | Semantic Search in Action |
+| | |
 |:---:|:---:|
-| `![Dashboard Image](assets/dashboard_overview.png)` <br> *A bird's eye view of Misinformation Trends* | `![Search Image](assets/semantic_search.png)` <br> *Mapping zero-keyword overlap contextual searches* |
-
-| UMAP Clusters | AI Driven Insights |
-|:---:|:---:|
-| `![UMAP Image](assets/umap_clusters.png)` <br> *KMeans clustering rendered via UMAP* | `![AI Image](assets/ai_summary.png)` <br> *Llama 3.2 dynamically summarizing engagement charts* |
+| ![Screenshot 1](screenshorts/1.jpeg) | ![Screenshot 2](screenshorts/2.jpeg) |
+| ![Screenshot 3](screenshorts/3.jpeg) | ![Screenshot 4](screenshorts/4.jpeg) |
+| ![Screenshot 5](screenshorts/5.jpeg) | ![Screenshot 6](screenshorts/6.jpeg) |
+| ![Screenshot 7](screenshorts/7.jpeg) | ![Screenshot 8](screenshorts/8.jpeg) |
+| ![Screenshot 9](screenshorts/9.jpeg) | ![Screenshot 10](screenshorts/10.jpeg) |
 
 ---
 
