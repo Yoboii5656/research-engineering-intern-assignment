@@ -2,6 +2,8 @@
 
 ## 🔗 Live Hosted Link & Demo
 **Live App:** [http://3.111.168.229:8501/](http://3.111.168.229:8501/)  
+**Video Demo:** [https://youtu.be/FxnyfsgmwU4](https://youtu.be/FxnyfsgmwU4)
+
 *(Note: Replace the placeholder above with your actual AWS EC2 Public IPv4 address if currently deployed.)*
 
 ---
