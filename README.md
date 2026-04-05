@@ -1,7 +1,7 @@
 # 🔍 Reddit Misinformation & Narrative Intelligence Dashboard
 
 ## 🔗 Live Hosted Link & Demo
-**Live App:** [http://<YOUR_EC2_PUBLIC_IP>:8501](http://127.0.0.1:8501)  
+**Live App:** [http://3.111.168.229:8501/](http://3.111.168.229:8501/)  
 *(Note: Replace the placeholder above with your actual AWS EC2 Public IPv4 address if currently deployed.)*
 
 ---
