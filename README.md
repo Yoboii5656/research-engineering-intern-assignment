@@ -4,14 +4,16 @@
 **Live App:** [http://3.111.168.229:8501/](http://3.111.168.229:8501/)  
 **Video Demo:** [https://youtu.be/FxnyfsgmwU4](https://youtu.be/FxnyfsgmwU4)
 
-*(Note: Replace the placeholder above with your actual AWS EC2 Public IPv4 address if currently deployed.)*
+> 🟢 **Deployed on AWS EC2** — The application is live on an **AWS EC2 `t3.medium` Ubuntu instance** (`ap-south-1` region). The AI inference engine (**Llama 3.2 via Ollama**) runs **locally on the same EC2 instance** — no external AI API calls, fully self-contained.
 
 ---
 
 ## 📌 Project Overview
-A sophisticated, end-to-end Streamlit application designed to analyze Reddit data with a focus on misinformation tracking, community engagement, sentiment analysis, and dynamic topic modeling. 
+A sophisticated, end-to-end Streamlit application designed to analyze Reddit data with a focus on misinformation tracking, community engagement, sentiment analysis, and dynamic topic modeling.
 
-The core innovation of this project lies in its integration of advanced Natural Language Processing (NLP), conceptual semantic search, and an embedded **AI Summary Assistant**. Powered by a locally hosted Large Language Model (`Llama 3.2` via `Ollama`), the dashboard seamlessly distills complex data into concise, natural language insights without relying on third-party, closed-source APIs.
+The core innovation of this project lies in its integration of advanced Natural Language Processing (NLP), conceptual semantic search, and an embedded **AI Summary Assistant**. Powered by a **locally hosted Large Language Model (`Llama 3.2` via `Ollama`) running directly on an AWS EC2 instance**, the dashboard distills complex data into concise, natural language insights — zero dependency on third-party closed-source AI APIs.
+
+> **Infrastructure:** Deployed on **AWS EC2** (`t3.medium`, Ubuntu 22.04, `ap-south-1`). Ollama is installed and served on the EC2 host itself, making AI inference private, fast, and cost-effective.
 
 ---
 
@@ -49,13 +51,20 @@ The core innovation of this project lies in its integration of advanced Natural 
 ```text
 .
 ├── app.py                      # Main Streamlit dashboard application
-├── clean.csv                   # Preprocessed Reddit dataset (ingested by app)
+├── clean.csv                   # Preprocessed Reddit dataset (5.6 MB, ingested by app)
+├── cleaning.ipynb              # Jupyter notebook — raw data cleaning & EDA pipeline
 ├── requirements.txt            # Python package dependencies
-├── deploy.sh                   # Bash script for native AWS EC2 automation
-├── AWS_DEPLOY_GUIDE.md         # Step-by-step instructions for AWS deployment
+├── deploy.sh                   # One-command AWS EC2 provisioner (installs Ollama + app)
+├── AWS_DEPLOY_GUIDE.md         # Step-by-step AWS EC2 provisioning walkthrough
+├── INSTRUCTIONS.md             # Original assignment brief & requirements
+├── manav-prompts.md            # AI prompt engineering notes & LLM interaction log
+├── .gitignore                  # Git ignore rules
 ├── README.md                   # This documentation file
-└── .streamlit/
-    └── secrets.toml            # Optional Streamlit config variables
+├── .streamlit/
+│   └── secrets.toml            # Streamlit secrets (Groq API key, config)
+└── screenshorts/               # App screenshots (10 images)
+    ├── 1.jpeg  ├── 2.jpeg  ├── 3.jpeg  ├── 4.jpeg  ├── 5.jpeg
+    ├── 6.jpeg  ├── 7.jpeg  ├── 8.jpeg  ├── 9.jpeg  └── 10.jpeg
 ```
 
 ---
@@ -106,13 +115,55 @@ streamlit run app.py
 
 ---
 
-## ☁️ Deployment (AWS Native EC2 Automation)
-We have fully automated the deployment process for AWS EC2 instances that operate independently of clunky Docker networks. 
+## ☁️ Deployment — AWS EC2 with Local LLM
 
-Please systematically follow the **[`AWS_DEPLOY_GUIDE.md`](AWS_DEPLOY_GUIDE.md)** for a UI walkthrough on provisioning an Ubuntu server.  Once logged into the new machine simply run our bash provisioner:
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│               AWS EC2  (t3.medium)                  │
+│           Ubuntu 22.04 · ap-south-1                 │
+│                                                     │
+│  ┌──────────────────┐   ┌────────────────────────┐  │
+│  │  Streamlit App   │──▶│  Ollama (Local LLM)    │  │
+│  │  app.py : 8501   │   │  Llama 3.2 · port 11434│  │
+│  └──────────────────┘   └────────────────────────┘  │
+│                                                     │
+│  Security Group: TCP 8501 open to 0.0.0.0/0         │
+└─────────────────────────────────────────────────────┘
+             ▲
+    Public IPv4: 3.111.168.229
+```
+
+- **No Docker** — Ollama and Streamlit run as native system processes.
+- **No external AI API** — Llama 3.2 runs entirely on the EC2 instance's CPU/RAM.
+- **Self-contained** — All inference is private and on-premise within the EC2 boundary.
+
+### One-Command Deploy
+
+Follow **[`AWS_DEPLOY_GUIDE.md`](AWS_DEPLOY_GUIDE.md)** to provision the Ubuntu server, then SSH in and run:
 
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
 ```
-*Your application, LLM, dependencies, and environment will gracefully build and spin up within 5-10 minutes.*
+
+The script automatically:
+1. Installs Python 3, pip, and all `requirements.txt` dependencies
+2. Installs **Ollama** and pulls **`llama3.2`** model (~2 GB)
+3. Starts the Ollama daemon as a background service
+4. Launches Streamlit on `0.0.0.0:8501`
+
+*Your application, local LLM, and all dependencies will be live within **5–10 minutes**.*
+
+### EC2 Instance Details
+| Parameter | Value |
+|---|---|
+| Provider | AWS EC2 |
+| Region | `ap-south-1` (Mumbai) |
+| Instance Type | `t3.medium` (2 vCPU / 4 GB RAM) |
+| OS | Ubuntu 22.04 LTS |
+| Public IP | `3.111.168.229` |
+| App Port | `8501` |
+| LLM Engine | Ollama — `llama3.2` |
+| LLM Port | `11434` (localhost only) |
