@@ -1,70 +1,118 @@
-# The Reddit Misinformation & Narrative Intelligence Dashboard
+# 🔍 Reddit Misinformation & Narrative Intelligence Dashboard
 
-Welcome to the **Reddit Misinformation & Trend Analysis Dashboard**. The goal of this project is to go beyond simple keyword matching and surface-level analytics. We wanted to build a tool that truly understands the *context* and *semantic meaning* of discussions happening across different communities on Reddit, specifically focusing on how misinformation spreads, what topics dominate the conversation, and how users engage with these narratives.
-
-This README will walk you through the story of our data, the analytical capabilities of the dashboard, and the advanced Machine Learning and AI components that power it.
-
----
-
-## Part 1: The Core Analytics Engine
-
-At its foundation, the dashboard ingests cleaned Reddit data (posts spanning various subreddits like `politics`, `Anarchism`, etc.) and provides interactive, tunable filtering based on date ranges and communities. 
-
-We break the analysis down into four key pillars:
-
-1. **Misinformation Trends:** We visualize the distribution of misinformation labels across different subreddits, alongside average engagement metrics (upvotes and comments) to see if controversial or misinformative posts garner more attention.
-2. **Subreddit Engagement:** A deep dive into user activity. We track the most active authors and overall community engagement volume to identify potential "super-spreaders" or highly vocal users.
-3. **Topic & Entity Analysis:** What are people actually talking about? We use topic distribution charts and dynamically generated Word Clouds based on Named Entity Recognition to highlight key figures, organizations, and themes.
-4. **Sentiment Analysis:** How do people feel? By applying **VADER Sentiment Analysis**, we categorize the emotional tone of posts (Positive, Negative, Neutral) and track how these sentiments evolve over time across different communities.
+## 🔗 Live Hosted Link & Demo
+**Live App:** [http://<YOUR_EC2_PUBLIC_IP>:8501](http://127.0.0.1:8501)  
+*(Note: Replace the placeholder above with your actual AWS EC2 Public IPv4 address if currently deployed.)*
 
 ---
 
-## Part 2: The Semantic Search & Chatbot
+## 📌 Project Overview
+A sophisticated, end-to-end Streamlit application designed to analyze Reddit data with a focus on misinformation tracking, community engagement, sentiment analysis, and dynamic topic modeling. 
 
-Standard search bars use exact keyword matching (like SQL `LIKE`). We realized this wasn't enough. If a user searches for "feline companions," a strict keyword search would completely miss a post talking about "stray cats and kittens."
-
-To solve this, we implemented a **Semantic Search Engine** backed by Sentence-Transformers. It reads the *meaning* of the user's query and finds posts with the closest conceptual alignment. 
-
-### Zero-Keyword Overlap Examples
-To prove the power of semantic search, here are 3 tested queries that share **zero lexical overlap** with the text they successfully retrieve:
-
-* **Query:** `"feline companions"`
-  * **Result Returned:** `"There's a stray cat and some kittens living near our porch."`
-  * **Why it works:** The model maps "felines" to "cats" and "companions" to pets/kittens within a high-dimensional vector space.
-* **Query:** `"working for zero compensation"`
-  * **Result Returned:** `"My boss expects me to do unpaid volunteer labor after my shift ends."`
-  * **Why it works:** "Working" conceptualizes as "labor", and "zero compensation" perfectly aligns with "unpaid volunteer."
-* **Query:** `"getting physically ill"`
-  * **Result Returned:** `"I am terrified of contracting a virus or catching a disease at the clinic."`
-  * **Why it works:** "Ill" is semantically linked to "virus/disease", and "getting physically ill" targets "contracting/catching a virus".
-
-### Edge Case Handling & The "Chatbot"
-The semantic search is designed to be bulletproof. It handles:
-* **Empty/Irrelevant Results:** If a query yields similarity scores below `0.25`, it won't return random garbage. It gracefully suggests the user rephrase.
-* **Very Short Queries:** Entering $<3$ characters throws a polite warning rather than attempting a meaningless search.
-* **Non-English Input:** The vectorizer processes any language. If it maps conceptually to English terms, it returns relevant results. Otherwise, it safely drops below the relevance threshold.
-
-To make the experience more interactive, we included a **Related Query Chatbot**. Once relevant posts are found, the app uses **TF-IDF Keyword Extraction** on the top results to suggest 2-3 dynamic, related topics the user might want to click and explore next.
+The core innovation of this project lies in its integration of advanced Natural Language Processing (NLP), conceptual semantic search, and an embedded **AI Summary Assistant**. Powered by a locally hosted Large Language Model (`Llama 3.2` via `Ollama`), the dashboard seamlessly distills complex data into concise, natural language insights without relying on third-party, closed-source APIs.
 
 ---
 
-## Part 3: Topic Clustering & Embedding Visualization
-
-Finally, we wanted a high-level topographical map of the entire conversation space. We implemented **Topic Clustering**, allowing the user to dynamically adjust the number of clusters (k) via a UI slider.
-
-To make the high-dimensional data human-readable, we utilized **UMAP** to squish the 384-dimensional embeddings down into a 2D interactive scatter plot. You can hover over individual points to see the exact post title and subreddit, instantly revealing how specific communities cluster together around shared ideologies or topics. We further extract the "top terms" for each cluster using TF-IDF so users instantly know what that cluster is discussing.
+## ✨ Features
+- **Brain-like Semantic Search Engine:** Moves beyond rigid keyword matching (SQL `LIKE` operator). Uses `all-MiniLM-L6-v2` embeddings to map concepts, allowing users to search by "meaning" instead of arbitrary character strings.
+- **Embedded AI Analyst Data Summaries:** A fully integrated `Llama 3.2` AI agent generating real-time natural language summaries of Plotly charts and metrics.
+- **Misinformation Footprint Tracking:** Quantifies and visualizes the prevalence of misinformative content, mapping its engagement velocity across different subreddits.
+- **Advanced Sentiment Timeline:** Utilizes VADER lexicon approaches to label emotional sentiment (Positive, Negative, Neutral) and maps public opinion evolutions dynamically over a specified time series.
+- **Machine Learning Clustering & UMAP Mapping:** Automatically groups untagged conversational themes using `KMeans`, executing dimensionality reduction via `UMAP` to plot 384-dimensional semantic text vectors onto a brilliant 2D interactive space.
+- **Context-Aware "Chatbot" Recommendations:** Dynamically evaluates the TF-IDF feature space of search queries to actively suggest related exploration topics to the user.
 
 ---
 
-## Technical Appendix: ML / AI Component Summary
+## 🛠️ Tech Stack
+**Frontend / Orchestration**
+- [Streamlit](https://streamlit.io/) — Interactive, rapid analytical application framework.
 
-To power these features, we relied on the following specific algorithms, parameters, and libraries.
+**Data & Mathematical Foundation**
+- `pandas` & `numpy` — Fast, robust data manipulation.
+- `plotly`, `matplotlib`, `wordcloud` — Rich data visualization.
 
-| Component | Model / Algorithm | Key Parameters | Library / API |
-|---|---|---|---|
-| **Text Embeddings** | `all-MiniLM-L6-v2` (Sentence-BERT) | Embedding dim: 384, pooling: mean | `sentence-transformers` — `SentenceTransformer.encode()` |
-| **Semantic Search** | Cosine Similarity over embeddings | Relevance threshold: 0.25, top-k: 5 | `sklearn.metrics.pairwise.cosine_similarity` |
-| **Topic Clustering** | KMeans | k: tunable 2–15, init: k-means++, max_iter: 300 | `sklearn.cluster.KMeans` |
-| **Embedding Visualization** | UMAP | n_components: 2, metric: cosine, n_neighbors: 15, min_dist: 0.1, random_state: 42 | `umap.umap_.UMAP.fit_transform()` |
-| **Sentiment Analysis** | VADER (lexicon-based) | compound score thresholds: +0.05 / -0.05 | `nltk.sentiment.SentimentIntensityAnalyzer` |
-| **Related Query Suggestions** | TF-IDF keyword extraction | max_features: 10, stop_words: english | `sklearn.feature_extraction.text.TfidfVectorizer` |
+**NLP & Machine Learning Engine**
+- `sentence-transformers` — Generates dense text embeddings (`all-MiniLM-L6-v2`).
+- `scikit-learn` — Cosine similarity ranking, KMeans clustering, and TF-IDF extraction.
+- `umap-learn` — High-dimensional mapping and reduction.
+- `nltk.sentiment` — VADER lexicon-based polarity scoring.
+
+**Generative AI Integration**
+- `ollama` — Run open-source language models locally on bare metal.
+- `Llama-3.2` — 8-billion parameter instruction-tuned LLM handling chart summaries.
+
+---
+
+## 📂 Project Structure
+```text
+.
+├── app.py                      # Main Streamlit dashboard application
+├── clean.csv                   # Preprocessed Reddit dataset (ingested by app)
+├── requirements.txt            # Python package dependencies
+├── deploy.sh                   # Bash script for native AWS EC2 automation
+├── AWS_DEPLOY_GUIDE.md         # Step-by-step instructions for AWS deployment
+├── README.md                   # This documentation file
+└── .streamlit/
+    └── secrets.toml            # Optional Streamlit config variables
+```
+
+---
+
+## 📸 Screenshots
+
+*(Replace these placeholders with the actual relative paths or links to your project's screenshots)*
+
+| Dashboard Overview | Semantic Search in Action |
+|:---:|:---:|
+| `![Dashboard Image](assets/dashboard_overview.png)` <br> *A bird's eye view of Misinformation Trends* | `![Search Image](assets/semantic_search.png)` <br> *Mapping zero-keyword overlap contextual searches* |
+
+| UMAP Clusters | AI Driven Insights |
+|:---:|:---:|
+| `![UMAP Image](assets/umap_clusters.png)` <br> *KMeans clustering rendered via UMAP* | `![AI Image](assets/ai_summary.png)` <br> *Llama 3.2 dynamically summarizing engagement charts* |
+
+---
+
+## 🚀 Local Installation & Execution
+
+### 1. Prerequisites
+- Python 3.10+
+- [Ollama](https://ollama.com/) installed and running reliably on your host machine.
+
+### 2. Setup
+Clone the repository to your desktop or cloud workspace:
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd YOUR_REPO_NAME
+```
+
+Launch a virtual environment and install the dependencies:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Download the required local AI Model inside Ollama:
+```bash
+ollama pull llama3.2
+```
+
+### 3. Run the App
+Ensure the Ollama daemon is active in the background, then spin up the Streamlit interface:
+```bash
+streamlit run app.py
+```
+*The app will be accessible at `http://localhost:8501`*
+
+---
+
+## ☁️ Deployment (AWS Native EC2 Automation)
+We have fully automated the deployment process for AWS EC2 instances that operate independently of clunky Docker networks. 
+
+Please systematically follow the **[`AWS_DEPLOY_GUIDE.md`](AWS_DEPLOY_GUIDE.md)** for a UI walkthrough on provisioning an Ubuntu server.  Once logged into the new machine simply run our bash provisioner:
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+*Your application, LLM, dependencies, and environment will gracefully build and spin up within 5-10 minutes.*
