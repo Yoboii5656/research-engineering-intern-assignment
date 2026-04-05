@@ -30,7 +30,7 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 
 # Groq model map (displayed name → API model id)
 GROQ_MODELS = {
-    "llama-3.2-3b (fastest ⚡)":   "llama-3.2-3b-preview",
+    "llama-3.1-8b (fastest ⚡)":   "llama-3.1-8b-instant",
     "llama-3.3-70b (best quality)": "llama-3.3-70b-versatile",
     "gemma2-9b":                     "gemma2-9b-it",
     "mixtral-8x7b":                  "mixtral-8x7b-32768",
@@ -52,7 +52,7 @@ def get_chart_summary(prompt: str, model_display: str) -> str:
 
     # ── Cloud path: Groq ──────────────────────────────────────────────────────
     if groq_key and _GROQ_AVAILABLE:
-        model_id = GROQ_MODELS.get(model_display, "llama-3.2-3b-preview")
+        model_id = GROQ_MODELS.get(model_display, "llama-3.1-8b-instant")
         try:
             client = GroqClient(api_key=groq_key)
             chat = client.chat.completions.create(
